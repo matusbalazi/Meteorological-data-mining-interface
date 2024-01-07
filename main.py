@@ -1,7 +1,7 @@
-from db_operations import retrieve_image_from_database
+from db_operations import retrieve_image_from_database, get_locations
 
 def main():
-    retrieve_image_from_database(224)
+    get_locations()
 
 if __name__ == '__main__':
     main()
