@@ -178,21 +178,21 @@ def get_available_dates(location, layer):
 
         if all(result_sql_query_dates_weather_data_id_null[0]) > 0:
             range_data_weather_data_id_null.append(
-                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_null[0][0], "%d-%m-%y"))
+                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_null[0][0], "%d.%m.%Y"))
             range_data_weather_data_id_null.append(
-                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_null[0][1], "%d-%m-%y"))
+                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_null[0][1], "%d.%m.%Y"))
 
-        if all(result_sql_query_dates_weather_data_id_not_null[0]):
+        if all(result_sql_query_dates_weather_data_id_not_null[0]) > 0:
             range_data_weather_data_id_not_null.append(
-                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_not_null[0][0], "%d-%m-%y"))
+                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_not_null[0][0], "%d.%m.%Y"))
             range_data_weather_data_id_not_null.append(
-                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_not_null[0][1], "%d-%m-%y"))
+                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_not_null[0][1], "%d.%m.%Y"))
 
-        if all(result_sql_query_dates_weather_data[0]):
+        if all(result_sql_query_dates_weather_data[0]) > 0:
             range_data_weather_data.append(
-                datetime.datetime.strftime(result_sql_query_dates_weather_data[0][0], "%d-%m-%y"))
+                datetime.datetime.strftime(result_sql_query_dates_weather_data[0][0], "%d.%m.%Y"))
             range_data_weather_data.append(
-                datetime.datetime.strftime(result_sql_query_dates_weather_data[0][1], "%d-%m-%y"))
+                datetime.datetime.strftime(result_sql_query_dates_weather_data[0][1], "%d.%m.%Y"))
 
     except mysql.Error as error:
         print(f"Error loading image from database: {error}")
@@ -202,3 +202,31 @@ def get_available_dates(location, layer):
         db_connection.close()
 
     return range_data_weather_data_id_null, range_data_weather_data, range_data_weather_data_id_not_null
+
+def get_weather_images(location, layer, date_from, date_to):
+    db_connection = connect_to_database()
+    cursor = db_connection.cursor()
+
+    weather_images = []
+
+    try:
+        sql_query_weather_images = "SELECT date, image FROM radar_images WHERE location = %s AND layer = %s AND date BETWEEN %s AND %s"
+        data = (location, layer, date_from, date_to)
+        cursor.execute(sql_query_weather_images, data)
+        result_sql_query_weather_images = cursor.fetchall()
+
+        if len(result_sql_query_weather_images) > 0:
+            for i in result_sql_query_weather_images:
+                weather_item = []
+                weather_item.append(datetime.datetime.strftime(i[0], "%d.%m.%Y"))
+                weather_item.append(i[1])
+                weather_images.append(weather_item)
+
+    except mysql.Error as error:
+        print(f"Error loading image from database: {error}")
+
+    finally:
+        cursor.close()
+        db_connection.close()
+
+    return weather_images
