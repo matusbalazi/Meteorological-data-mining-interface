@@ -1,10 +1,13 @@
 import mysql.connector as mysql
 import credentials
+import datetime
+
 
 def connect_to_database():
     db_connection = mysql.connect(host=credentials.server_host_ip, database=credentials.database_name,
                                   user=credentials.database_user, password=credentials.database_password)
     return db_connection
+
 
 def get_available_locations():
     db_connection = connect_to_database()
@@ -59,6 +62,7 @@ def get_available_locations():
 
     return areas, cities
 
+
 def find_record_in_db(location):
     db_connection = connect_to_database()
     cursor = db_connection.cursor()
@@ -68,29 +72,38 @@ def find_record_in_db(location):
     exist_weather_images_with_data = False
 
     try:
-        sql_query_exist_weather_images = "SELECT * FROM radar_images WHERE location = %s AND weather_data_id IS NULL"
-        data = (location,)
-        cursor.execute(sql_query_exist_weather_images, data)
-        result_sql_query_exist_weather_images = cursor.fetchall()
-
-        if len(result_sql_query_exist_weather_images):
-            exist_weather_images = True
-
-        sql_query_exist_weather_data = "SELECT * FROM weather_info WHERE city = %s"
-        data = (location,)
-        cursor.execute(sql_query_exist_weather_data, data)
-        result_sql_query_exist_weather_data = cursor.fetchall()
-
-        if len(result_sql_query_exist_weather_data):
-            exist_weather_data = True
-
         sql_query_exist_weather_images_with_data = "SELECT * FROM radar_images WHERE location = %s AND weather_data_id IS NOT NULL"
         data = (location,)
         cursor.execute(sql_query_exist_weather_images_with_data, data)
         result_sql_query_exist_weather_images_with_data = cursor.fetchall()
 
-        if len(result_sql_query_exist_weather_images_with_data):
+        if not result_sql_query_exist_weather_images_with_data:
+            exist_weather_images_with_data = False
+        else:
             exist_weather_images_with_data = True
+            exist_weather_images = True
+            exist_weather_data = True
+
+        if (exist_weather_images_with_data == False):
+            sql_query_exist_weather_images = "SELECT * FROM radar_images WHERE location = %s"
+            data = (location,)
+            cursor.execute(sql_query_exist_weather_images, data)
+            result_sql_query_exist_weather_images = cursor.fetchall()
+
+            if not result_sql_query_exist_weather_images:
+                exist_weather_images = False
+            else:
+                exist_weather_images = True
+
+            sql_query_exist_weather_data = "SELECT * FROM weather_info WHERE city = %s"
+            data = (location,)
+            cursor.execute(sql_query_exist_weather_data, data)
+            result_sql_query_exist_weather_data = cursor.fetchall()
+
+            if not result_sql_query_exist_weather_data:
+                exist_weather_data = False
+            else:
+                exist_weather_data = True
 
     except mysql.Error as error:
         print(f"Error loading image from database: {error}")
@@ -100,6 +113,7 @@ def find_record_in_db(location):
         db_connection.close()
 
     return exist_weather_images, exist_weather_data, exist_weather_images_with_data
+
 
 def get_available_layers(location):
     db_connection = connect_to_database()
@@ -136,3 +150,55 @@ def get_available_layers(location):
         db_connection.close()
 
     return layers_weather_data_id_null, layers_weather_data_id_not_null
+
+
+def get_available_dates(location, layer):
+    db_connection = connect_to_database()
+    cursor = db_connection.cursor()
+
+    range_data_weather_data_id_null = []
+    range_data_weather_data_id_not_null = []
+    range_data_weather_data = []
+
+    try:
+        sql_query_dates_weather_data_id_null = "SELECT MIN(date), MAX(date) FROM radar_images WHERE location = %s AND layer = %s AND weather_data_id IS NULL"
+        data = (location, layer,)
+        cursor.execute(sql_query_dates_weather_data_id_null, data)
+        result_sql_query_dates_weather_data_id_null = cursor.fetchall()
+
+        sql_query_dates_weather_data_id_not_null = "SELECT MIN(date), MAX(date) FROM radar_images WHERE location = %s AND layer = %s AND weather_data_id IS NOT NULL"
+        data = (location, layer,)
+        cursor.execute(sql_query_dates_weather_data_id_not_null, data)
+        result_sql_query_dates_weather_data_id_not_null = cursor.fetchall()
+
+        sql_query_dates_weather_data = "SELECT MIN(time_of_data_calc), MAX(time_of_data_calc) FROM weather_info WHERE city = %s"
+        data = (location,)
+        cursor.execute(sql_query_dates_weather_data, data)
+        result_sql_query_dates_weather_data = cursor.fetchall()
+
+        if all(result_sql_query_dates_weather_data_id_null[0]) > 0:
+            range_data_weather_data_id_null.append(
+                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_null[0][0], "%d-%m-%y"))
+            range_data_weather_data_id_null.append(
+                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_null[0][1], "%d-%m-%y"))
+
+        if all(result_sql_query_dates_weather_data_id_not_null[0]):
+            range_data_weather_data_id_not_null.append(
+                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_not_null[0][0], "%d-%m-%y"))
+            range_data_weather_data_id_not_null.append(
+                datetime.datetime.strftime(result_sql_query_dates_weather_data_id_not_null[0][1], "%d-%m-%y"))
+
+        if all(result_sql_query_dates_weather_data[0]):
+            range_data_weather_data.append(
+                datetime.datetime.strftime(result_sql_query_dates_weather_data[0][0], "%d-%m-%y"))
+            range_data_weather_data.append(
+                datetime.datetime.strftime(result_sql_query_dates_weather_data[0][1], "%d-%m-%y"))
+
+    except mysql.Error as error:
+        print(f"Error loading image from database: {error}")
+
+    finally:
+        cursor.close()
+        db_connection.close()
+
+    return range_data_weather_data_id_null, range_data_weather_data, range_data_weather_data_id_not_null
