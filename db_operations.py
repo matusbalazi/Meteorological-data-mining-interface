@@ -1,6 +1,4 @@
 import mysql.connector as mysql
-from io import BytesIO
-from PIL import Image
 import credentials
 
 def connect_to_database():
@@ -8,7 +6,7 @@ def connect_to_database():
                                   user=credentials.database_user, password=credentials.database_password)
     return db_connection
 
-def get_locations():
+def get_available_locations():
     db_connection = connect_to_database()
     cursor = db_connection.cursor()
 
@@ -49,14 +47,8 @@ def get_locations():
             if i[0] not in cities:
                 cities.append(i[0])
 
-        print(result_sql_query_area_images)
-        print(result_sql_query_city_images)
-        print(result_sql_query_city_images_data)
-        print(result_sql_query_city_data)
-        print(areas)
-        print(cities)
-
-        return areas, cities
+        areas.sort()
+        cities.sort()
 
     except mysql.Error as error:
         print(f"Error loading image from database: {error}")
@@ -65,28 +57,40 @@ def get_locations():
         cursor.close()
         db_connection.close()
 
-    return locations, cities
+    return areas, cities
 
-def retrieve_image_from_database(image_id):
+def find_record_in_db(location):
     db_connection = connect_to_database()
-
     cursor = db_connection.cursor()
 
+    exist_weather_images = False
+    exist_weather_data = False
+    exist_weather_images_with_data = False
+
     try:
-        sql_select_query = "SELECT image FROM radar_images WHERE id = %s"
-        data = (image_id,)
+        sql_query_exist_weather_images = "SELECT * FROM radar_images WHERE location = %s AND weather_data_id IS NULL"
+        data = (location,)
+        cursor.execute(sql_query_exist_weather_images, data)
+        result_sql_query_exist_weather_images = cursor.fetchall()
 
-        cursor.execute(sql_select_query, data)
+        if len(result_sql_query_exist_weather_images):
+            exist_weather_images = True
 
-        result = cursor.fetchone()
+        sql_query_exist_weather_data = "SELECT * FROM weather_info WHERE city = %s"
+        data = (location,)
+        cursor.execute(sql_query_exist_weather_data, data)
+        result_sql_query_exist_weather_data = cursor.fetchall()
 
-        if result is not None:
-            image_data = result[0]
+        if len(result_sql_query_exist_weather_data):
+            exist_weather_data = True
 
-            print(image_data)
+        sql_query_exist_weather_images_with_data = "SELECT * FROM radar_images WHERE location = %s AND weather_data_id IS NOT NULL"
+        data = (location,)
+        cursor.execute(sql_query_exist_weather_images_with_data, data)
+        result_sql_query_exist_weather_images_with_data = cursor.fetchall()
 
-        else:
-            print("The image with the given ID was not found")
+        if len(result_sql_query_exist_weather_images_with_data):
+            exist_weather_images_with_data = True
 
     except mysql.Error as error:
         print(f"Error loading image from database: {error}")
@@ -94,3 +98,41 @@ def retrieve_image_from_database(image_id):
     finally:
         cursor.close()
         db_connection.close()
+
+    return exist_weather_images, exist_weather_data, exist_weather_images_with_data
+
+def get_available_layers(location):
+    db_connection = connect_to_database()
+    cursor = db_connection.cursor()
+
+    layers_weather_data_id_null = []
+    layers_weather_data_id_not_null = []
+
+    try:
+        sql_query_weather_data_id_null = "SELECT DISTINCT layer FROM radar_images WHERE location = %s AND weather_data_id IS NULL ORDER BY layer ASC"
+        data = (location,)
+        cursor.execute(sql_query_weather_data_id_null, data)
+        result_sql_query_weather_data_id_null = cursor.fetchall()
+
+        sql_query_weather_data_id_not_null = "SELECT DISTINCT layer FROM radar_images WHERE location = %s AND weather_data_id IS NOT NULL ORDER BY layer ASC"
+        data = (location,)
+        cursor.execute(sql_query_weather_data_id_not_null, data)
+        result_sql_query_weather_data_id_not_null = cursor.fetchall()
+
+        for i in result_sql_query_weather_data_id_null:
+            layers_weather_data_id_null.append(i[0])
+
+        for i in result_sql_query_weather_data_id_not_null:
+            layers_weather_data_id_not_null.append(i[0])
+
+        layers_weather_data_id_null.sort()
+        layers_weather_data_id_not_null.sort()
+
+    except mysql.Error as error:
+        print(f"Error loading image from database: {error}")
+
+    finally:
+        cursor.close()
+        db_connection.close()
+
+    return layers_weather_data_id_null, layers_weather_data_id_not_null
