@@ -1,6 +1,7 @@
 import mysql.connector as mysql
 import credentials
 import datetime
+import decimal
 
 
 def connect_to_database():
@@ -203,6 +204,7 @@ def get_available_dates(location, layer):
 
     return range_data_weather_data_id_null, range_data_weather_data, range_data_weather_data_id_not_null
 
+
 def get_weather_images(location, layer, date_from, date_to):
     db_connection = connect_to_database()
     cursor = db_connection.cursor()
@@ -230,3 +232,70 @@ def get_weather_images(location, layer, date_from, date_to):
         db_connection.close()
 
     return weather_images
+
+
+def get_weather_data(location, weather_data_types, date_from, date_to):
+    db_connection = connect_to_database()
+    cursor = db_connection.cursor()
+
+    weather_data = []
+
+    try:
+        sql_query_weather_data = "SELECT time_of_data_calc, " + weather_data_types + " FROM weather_info WHERE city = %s AND time_of_data_calc BETWEEN %s AND %s"
+        data = (location, date_from, date_to)
+        cursor.execute(sql_query_weather_data, data)
+        result_sql_query_weather_data = cursor.fetchall()
+
+        if len(result_sql_query_weather_data) > 0:
+            for i in result_sql_query_weather_data:
+                weather_item = []
+                weather_item.append(datetime.datetime.strftime(i[0], "%d.%m.%Y"))
+                for j in range(1, len(list(weather_data_types.split(" "))) + 1):
+                    if type(i[j]) is decimal.Decimal:
+                        weather_item.append(float(i[j]))
+                    else:
+                        weather_item.append(str(i[j]))
+                weather_data.append(weather_item)
+
+    except mysql.Error as error:
+        print(f"Error loading image from database: {error}")
+
+    finally:
+        cursor.close()
+        db_connection.close()
+
+    return weather_data
+
+
+def get_weather_images_and_data(location, layer, weather_data_types, date_from, date_to):
+    db_connection = connect_to_database()
+    cursor = db_connection.cursor()
+
+    weather_images_and_data = []
+
+    try:
+        sql_query_weather_images_and_data = "SELECT date, image, " + weather_data_types + " FROM radar_images JOIN weather_info ON radar_images.weather_data_id = weather_info.id WHERE location = %s AND layer = %s AND date BETWEEN %s AND %s"
+        data = (location, layer, date_from, date_to)
+        cursor.execute(sql_query_weather_images_and_data, data)
+        result_sql_query_weather_images_and_data = cursor.fetchall()
+
+        if len(result_sql_query_weather_images_and_data) > 0:
+            for i in result_sql_query_weather_images_and_data:
+                weather_item = []
+                weather_item.append(datetime.datetime.strftime(i[0], "%d.%m.%Y"))
+                weather_item.append(i[1])
+                for j in range(2, len(list(weather_data_types.split(" "))) + 1):
+                    if type(i[j]) is decimal.Decimal:
+                        weather_item.append(float(i[j]))
+                    else:
+                        weather_item.append(str(i[j]))
+                weather_images_and_data.append(weather_item)
+
+    except mysql.Error as error:
+        print(f"Error loading image from database: {error}")
+
+    finally:
+        cursor.close()
+        db_connection.close()
+
+    return weather_images_and_data
