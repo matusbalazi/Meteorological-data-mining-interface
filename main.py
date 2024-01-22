@@ -1,8 +1,10 @@
 from flask import Flask, jsonify, request
 import db_operations
+from flask_cors import CORS
+
 
 app = Flask(__name__)
-
+CORS(app)
 
 # 1
 @app.route('/api/available_locations', methods=['GET'])
@@ -91,4 +93,5 @@ def main():
 
 
 if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
     main()
