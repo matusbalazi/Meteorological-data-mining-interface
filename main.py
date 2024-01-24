@@ -25,8 +25,8 @@ def api_exist_records(location):
 @app.route('/api/available_layers/<string:location>', methods=['GET'])
 def api_get_available_layers(location):
     layers_weather_data_id_null, layers_weather_data_id_not_null = db_operations.get_available_layers(location)
-    return jsonify({'layers_weather_data_id_null': layers_weather_data_id_null,
-                    'layers_weather_data_id_not_null': layers_weather_data_id_not_null})
+    return jsonify({'layers': layers_weather_data_id_null,
+                    'layers_with_data': layers_weather_data_id_not_null})
 
 
 # 4 a,b,c

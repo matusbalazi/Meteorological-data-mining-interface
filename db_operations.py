@@ -124,7 +124,7 @@ def get_available_layers(location):
     layers_weather_data_id_not_null = []
 
     try:
-        sql_query_weather_data_id_null = "SELECT DISTINCT layer FROM radar_images WHERE location = %s AND weather_data_id IS NULL ORDER BY layer ASC"
+        sql_query_weather_data_id_null = "SELECT DISTINCT layer FROM radar_images WHERE location = %s ORDER BY layer ASC"
         data = (location,)
         cursor.execute(sql_query_weather_data_id_null, data)
         result_sql_query_weather_data_id_null = cursor.fetchall()
