@@ -162,7 +162,7 @@ def get_available_dates(location, layer):
     range_data_weather_data = []
 
     try:
-        sql_query_dates_weather_data_id_null = "SELECT MIN(date), MAX(date) FROM radar_images WHERE location = %s AND layer = %s AND weather_data_id IS NULL"
+        sql_query_dates_weather_data_id_null = "SELECT MIN(date), MAX(date) FROM radar_images WHERE location = %s AND layer = %s"
         data = (location, layer,)
         cursor.execute(sql_query_dates_weather_data_id_null, data)
         result_sql_query_dates_weather_data_id_null = cursor.fetchall()
