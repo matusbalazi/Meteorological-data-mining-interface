@@ -220,7 +220,7 @@ def get_weather_images(location, layer, date_from, date_to):
         if len(result_sql_query_weather_images) > 0:
             for i in result_sql_query_weather_images:
                 weather_item = []
-                weather_item.append(datetime.datetime.strftime(i[0], "%d.%m.%Y"))
+                weather_item.append(datetime.datetime.strftime(i[0], "%d.%m.%Y %H:%M:%S"))
                 weather_item.append(i[1])
                 weather_images.append(weather_item)
 
@@ -248,13 +248,13 @@ def get_weather_data(location, weather_data_types, date_from, date_to):
 
         if len(result_sql_query_weather_data) > 0:
             for i in result_sql_query_weather_data:
-                weather_item = []
-                weather_item.append(datetime.datetime.strftime(i[0], "%d.%m.%Y"))
+                weather_item = {"date": datetime.datetime.strftime(i[0], "%d.%m.%Y %H:%M:%S")}
                 for j in range(1, len(list(weather_data_types.split(" "))) + 1):
-                    if type(i[j]) is decimal.Decimal:
-                        weather_item.append(float(i[j]))
-                    else:
-                        weather_item.append(str(i[j]))
+                    data_type = weather_data_types.split(" ")[j - 1].strip(",")
+                    value = i[j]
+                    if type(value) is decimal.Decimal:
+                        value = float(value)
+                    weather_item[data_type] = value
                 weather_data.append(weather_item)
 
     except mysql.Error as error:
@@ -281,14 +281,13 @@ def get_weather_images_and_data(location, layer, weather_data_types, date_from, 
 
         if len(result_sql_query_weather_images_and_data) > 0:
             for i in result_sql_query_weather_images_and_data:
-                weather_item = []
-                weather_item.append(datetime.datetime.strftime(i[0], "%d.%m.%Y"))
-                weather_item.append(i[1])
-                for j in range(2, len(list(weather_data_types.split(" "))) + 1):
-                    if type(i[j]) is decimal.Decimal:
-                        weather_item.append(float(i[j]))
-                    else:
-                        weather_item.append(str(i[j]))
+                weather_item = {"date": datetime.datetime.strftime(i[0], "%d.%m.%Y %H:%M:%S"), "image": i[1]}
+                for j in range(1, len(list(weather_data_types.split(" "))) + 1):
+                    data_type = weather_data_types.split(" ")[j - 1]
+                    value = i[j + 1]
+                    if type(value) is decimal.Decimal:
+                        value = float(value)
+                    weather_item[data_type] = value
                 weather_images_and_data.append(weather_item)
 
     except mysql.Error as error:
