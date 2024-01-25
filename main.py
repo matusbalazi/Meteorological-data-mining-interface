@@ -91,7 +91,7 @@ def api_get_weather_data(location, weather_data_types, date_from, date_to):
 
         json_file_path = os.path.join(date_folder, 'data.json')
         with open(json_file_path, 'w') as json_file:
-            json.dump(record, json_file)
+            json.dump(record, json_file, indent=2)
 
     # Create a zip file containing all folders
     zip_file_path = './output.zip'

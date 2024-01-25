@@ -282,8 +282,8 @@ def get_weather_images_and_data(location, layer, weather_data_types, date_from, 
         if len(result_sql_query_weather_images_and_data) > 0:
             for i in result_sql_query_weather_images_and_data:
                 weather_item = {"date": datetime.datetime.strftime(i[0], "%d.%m.%Y %H:%M:%S"), "image": i[1]}
-                for j in range(1, len(list(weather_data_types.split(" "))) + 1):
-                    data_type = weather_data_types.split(" ")[j - 1]
+                for j in range(1, len(list(weather_data_types.split(","))) + 1):
+                    data_type = weather_data_types.split(",")[j - 1]
                     value = i[j + 1]
                     if type(value) is decimal.Decimal:
                         value = float(value)
